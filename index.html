@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <head>
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+            crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+        crossorigin="anonymous"></script>
+        <script>
+            $(document).ready(function () {
+                getDevices();
+            });
+            function getDevices(){
+                $('#deviceSelect').html('<option selected value=null disabled>Select a device</option>');
+                $.get("/devices", function (data) {
+                    for (option of data) {
+                        $('#deviceSelect').append($('<option>', {
+                            value: option.mac,
+                            text: option.name + " " + option.mac
+                        }));
+                    }
+                }).fail(function () {
+                    console.error("Error fetching available devices");
+                });
+            }
+            function addDevice(e){
+                e.preventDefault();
+                let name = $('#nameinput').val();
+                let mac = $('#macinput').val();
+                $.post("/devices", { name: name, mac: mac }, function(){
+                    getDevices();
+                    $('#addErrorMsg').text('');
+                    $(':input', '#addDeviceForm')
+                        .not(':button, :submit, :reset, :hidden')
+                        .val('')
+                        .removeAttr('checked')
+                        .removeAttr('selected');
+                }).fail((jqXHR, errorMsg) => {
+                    $('#addErrorMsg').text(jqXHR.responseText);
+                });
+            }
+            
+
+            function deleteDevice(e) {
+                e.preventDefault();
+                let mac = $('#deviceSelect').val();
+                let statusMsg = $("#statusMsg");
+                $.ajax({
+                    url: `/devices/${mac}`,
+                    type: 'DELETE',
+                    data: { delete: true },
+                    success: function () {
+                        statusMsg.text('Device was properly deleted.')
+                        statusMsg.css('color', 'green');
+                        getDevices();
+                        $('#turnOnBtn').prop('disabled', true);
+                        $('#deleteBtn').prop('disabled', true);
+                    },
+                    error: function (err) {
+                        statusMsg.text('Device could not be removed. Try again later.')
+                        statusMsg.css('color', 'red');
+                    }
+                });
+            }
+
+            function selectDevice(e){
+                e.preventDefault();
+                const value = e.target.value;
+                $('#turnOnBtn').prop('disabled', value == 'null');
+                $('#deleteBtn').prop('disabled', value == 'null');
+            }
+
+
+
+            function wakeDevice(e){
+                e.preventDefault();
+                let mac = $('#deviceSelect').val();
+                let statusMsg = $("#statusMsg");
+                $.ajax({
+                    url: `/devices/${mac}`,
+                    type: 'PUT',
+                    data: { wake: true},
+                    success: function () {
+                        statusMsg.text('WOL sent, device should be awake.')
+                        statusMsg.css('color', 'green');
+                    },
+                    error: function (err) {
+                        statusMsg.text('WOL failed, check the MAC address.')
+                        statusMsg.css('color', 'red');
+                    }
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <h4>Select a device:</h4>
+            <form onsubmit="wakeDevice(event)">
+                <select id="deviceSelect" class="form-control" onchange="selectDevice(event)" style="min-width: 250px; width: auto; display: inline;">
+                    <option selected value=null disabled>Select a device</option>
+                </select>
+                <button id="turnOnBtn" type="submit" class="btn btn-success" style="margin-left: 20px" disabled>Turn On</button>
+                <button id="deleteBtn" type="button" class="btn btn-danger" style="margin-left: 20px" onclick="deleteDevice(event)" disabled>Delete</button>
+                <span id="statusMsg" style="font-weight: bold; margin-left: 20px;"></span>
+            </form>
+            <div class="clearfix"></div>
+            <hr>
+            <h4>Or add a new device:</h4>
+            <form id="addDeviceForm" onsubmit="addDevice(event)">
+                <div class="form-group">
+                    <label for="exampleInputEmail1">Device name:</label>
+                    <input id="nameinput" type="text" placeholder="Device name" required/>
+                </div>
+                <div class="form-group">
+                    <label for="macinput">MAC Address:</label>
+                    <!-- <input id="macinput" type="text" placeholder="FF:FF:FF:FF:FF:FF" pattern="^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"/> -->
+                    <input id="macinput" type="text" data-inputmask="'mask': 'FF:FF:FF:FF:FF:FF'" required/>
+                </div>  
+                <button type="submit" class="btn btn-primary">Add device</button>
+                <span id="addErrorMsg" style="color: red; font-weight: bold; margin-left: 20px"></span>
+            </form>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "vxwol",
+  "version": "0.0.1",
+  "description": "Small home WOL server based on REST API",
+  "main": "wol.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "wol",
+    "home",
+    "rest",
+    "api",
+    "portable",
+    "node"
+  ],
+  "author": "vxtals",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "node-windows": "^0.1.14",
+    "node-wol": "^0.1.1"
+  }
+}
